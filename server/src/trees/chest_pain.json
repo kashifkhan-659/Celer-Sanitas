@@ -1,0 +1,146 @@
+{
+  "category": "chest_pain",
+  "label": "Chest",
+  "version": 1,
+  "start": "onset",
+  "nodes": {
+    "onset": {
+      "id": "onset",
+      "question": "When did the chest discomfort start?",
+      "type": "single",
+      "options": [
+        { "id": "sudden", "label": "Suddenly, in the last hour or so" },
+        { "id": "today", "label": "Earlier today" },
+        { "id": "few_days", "label": "Over the past few days" },
+        { "id": "week_plus", "label": "A week ago or longer" }
+      ],
+      "next": {
+        "sudden": "character",
+        "today": "character",
+        "few_days": "character",
+        "week_plus": "character"
+      }
+    },
+    "character": {
+      "id": "character",
+      "question": "How would you describe the discomfort?",
+      "type": "single",
+      "options": [
+        { "id": "pressure", "label": "Pressure or tightness" },
+        { "id": "sharp", "label": "Sharp or stabbing" },
+        { "id": "burning", "label": "Burning" },
+        { "id": "dull", "label": "A dull ache" }
+      ],
+      "next": {
+        "pressure": "radiation",
+        "sharp": "breathing",
+        "burning": "meals",
+        "dull": "radiation"
+      }
+    },
+    "radiation": {
+      "id": "radiation",
+      "question": "Does the discomfort spread anywhere else?",
+      "type": "single",
+      "options": [
+        { "id": "none", "label": "No, it stays in one place" },
+        { "id": "arm", "label": "Into an arm or shoulder" },
+        { "id": "jaw", "label": "Into the jaw or neck" },
+        { "id": "back", "label": "Through to the back" }
+      ],
+      "next": {
+        "none": "exertion",
+        "arm": "exertion",
+        "jaw": "exertion",
+        "back": "exertion"
+      }
+    },
+    "breathing": {
+      "id": "breathing",
+      "question": "Does it change when you breathe in deeply?",
+      "type": "single",
+      "options": [
+        { "id": "worse", "label": "It gets worse" },
+        { "id": "same", "label": "No change" },
+        { "id": "unsure", "label": "I'm not sure" }
+      ],
+      "next": {
+        "worse": "exertion",
+        "same": "exertion",
+        "unsure": "exertion"
+      }
+    },
+    "meals": {
+      "id": "meals",
+      "question": "Is the discomfort related to eating?",
+      "type": "single",
+      "options": [
+        { "id": "after", "label": "Worse after meals" },
+        { "id": "better", "label": "Eases after eating" },
+        { "id": "no_link", "label": "No connection to meals" }
+      ],
+      "next": {
+        "after": "exertion",
+        "better": "exertion",
+        "no_link": "exertion"
+      }
+    },
+    "exertion": {
+      "id": "exertion",
+      "question": "Does physical activity affect it?",
+      "type": "single",
+      "options": [
+        { "id": "worse_activity", "label": "Worse with activity" },
+        { "id": "at_rest", "label": "It happens at rest" },
+        { "id": "no_change", "label": "No change either way" }
+      ],
+      "next": {
+        "worse_activity": "associated",
+        "at_rest": "associated",
+        "no_change": "associated"
+      }
+    },
+    "associated": {
+      "id": "associated",
+      "question": "Is anything else happening alongside it right now?",
+      "type": "single",
+      "options": [
+        { "id": "breathless", "label": "Shortness of breath" },
+        { "id": "sweaty", "label": "Sweating" },
+        { "id": "nausea", "label": "Nausea" },
+        { "id": "none", "label": "None of these" }
+      ],
+      "next": {
+        "breathless": "severity",
+        "sweaty": "severity",
+        "nausea": "severity",
+        "none": "severity"
+      }
+    },
+    "severity": {
+      "id": "severity",
+      "question": "How strong is the discomfort right now?",
+      "type": "single",
+      "options": [
+        { "id": "mild", "label": "Mild — I notice it but can carry on" },
+        { "id": "moderate", "label": "Moderate — hard to ignore" },
+        { "id": "severe", "label": "Severe — very hard to bear" }
+      ],
+      "next": {
+        "mild": "history",
+        "moderate": "history",
+        "severe": "history"
+      }
+    },
+    "history": {
+      "id": "history",
+      "question": "Have you had this kind of discomfort before?",
+      "type": "single",
+      "options": [
+        { "id": "first", "label": "No, this is the first time" },
+        { "id": "before", "label": "Yes, I've had it before" },
+        { "id": "ongoing", "label": "It's been ongoing or keeps returning" }
+      ]
+    }
+  }
+}

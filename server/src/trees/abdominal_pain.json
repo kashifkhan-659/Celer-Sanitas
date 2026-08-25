@@ -1,0 +1,146 @@
+{
+  "category": "abdominal_pain",
+  "label": "Abdomen",
+  "version": 1,
+  "start": "onset",
+  "nodes": {
+    "onset": {
+      "id": "onset",
+      "question": "When did the abdominal pain start?",
+      "type": "single",
+      "options": [
+        { "id": "sudden", "label": "Suddenly, in the last hour or so" },
+        { "id": "today", "label": "Earlier today" },
+        { "id": "few_days", "label": "Over the past few days" },
+        { "id": "week_plus", "label": "A week ago or longer" }
+      ],
+      "next": {
+        "sudden": "location",
+        "today": "location",
+        "few_days": "location",
+        "week_plus": "location"
+      }
+    },
+    "location": {
+      "id": "location",
+      "question": "Where is the pain?",
+      "type": "single",
+      "options": [
+        { "id": "upper", "label": "Upper belly, below the ribs" },
+        { "id": "lower", "label": "Lower belly" },
+        { "id": "right_side", "label": "More on the right side" },
+        { "id": "around_navel", "label": "Around the belly button" }
+      ],
+      "next": {
+        "upper": "character",
+        "lower": "character",
+        "right_side": "character",
+        "around_navel": "character"
+      }
+    },
+    "character": {
+      "id": "character",
+      "question": "How would you describe the pain?",
+      "type": "single",
+      "options": [
+        { "id": "cramping", "label": "Cramping, or coming in waves" },
+        { "id": "sharp", "label": "Sharp" },
+        { "id": "dull", "label": "A dull ache" },
+        { "id": "burning", "label": "Burning" }
+      ],
+      "next": {
+        "cramping": "bowel",
+        "sharp": "movement",
+        "dull": "meals",
+        "burning": "meals"
+      }
+    },
+    "bowel": {
+      "id": "bowel",
+      "question": "Any change in your bowel habits?",
+      "type": "single",
+      "options": [
+        { "id": "looser", "label": "Looser or more often" },
+        { "id": "harder", "label": "Harder or less often" },
+        { "id": "no_change", "label": "No change" }
+      ],
+      "next": {
+        "looser": "associated",
+        "harder": "associated",
+        "no_change": "associated"
+      }
+    },
+    "movement": {
+      "id": "movement",
+      "question": "Does moving or coughing make it worse?",
+      "type": "single",
+      "options": [
+        { "id": "worse", "label": "Yes, it gets worse" },
+        { "id": "no_change", "label": "No change" },
+        { "id": "unsure", "label": "I'm not sure" }
+      ],
+      "next": {
+        "worse": "associated",
+        "no_change": "associated",
+        "unsure": "associated"
+      }
+    },
+    "meals": {
+      "id": "meals",
+      "question": "Is the pain related to eating?",
+      "type": "single",
+      "options": [
+        { "id": "worse_after", "label": "Worse after eating" },
+        { "id": "better_after", "label": "Eases after eating" },
+        { "id": "no_link", "label": "No connection to meals" }
+      ],
+      "next": {
+        "worse_after": "associated",
+        "better_after": "associated",
+        "no_link": "associated"
+      }
+    },
+    "associated": {
+      "id": "associated",
+      "question": "Is anything else going on alongside it?",
+      "type": "single",
+      "options": [
+        { "id": "nausea", "label": "Nausea" },
+        { "id": "vomiting", "label": "Vomiting" },
+        { "id": "feverish", "label": "Feeling feverish or hot" },
+        { "id": "none", "label": "None of these" }
+      ],
+      "next": {
+        "nausea": "severity",
+        "vomiting": "severity",
+        "feverish": "severity",
+        "none": "severity"
+      }
+    },
+    "severity": {
+      "id": "severity",
+      "question": "How strong is the pain right now?",
+      "type": "single",
+      "options": [
+        { "id": "mild", "label": "Mild — I notice it but can carry on" },
+        { "id": "moderate", "label": "Moderate — hard to ignore" },
+        { "id": "severe", "label": "Severe — very hard to bear" }
+      ],
+      "next": {
+        "mild": "history",
+        "moderate": "history",
+        "severe": "history"
+      }
+    },
+    "history": {
+      "id": "history",
+      "question": "Have you had this kind of pain before?",
+      "type": "single",
+      "options": [
+        { "id": "first", "label": "No, this is the first time" },
+        { "id": "before", "label": "Yes, I've had it before" },
+        { "id": "ongoing", "label": "It's been ongoing or keeps returning" }
+      ]
+    }
+  }
+}

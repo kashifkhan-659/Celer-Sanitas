@@ -1,0 +1,148 @@
+{
+  "category": "headache",
+  "label": "Head",
+  "version": 1,
+  "start": "onset",
+  "nodes": {
+    "onset": {
+      "id": "onset",
+      "question": "When did this headache begin?",
+      "type": "single",
+      "options": [
+        { "id": "sudden", "label": "Suddenly — it peaked within minutes" },
+        { "id": "today", "label": "Earlier today" },
+        { "id": "few_days", "label": "Over the past few days" },
+        { "id": "recurring", "label": "It keeps coming back over weeks" }
+      ],
+      "next": {
+        "sudden": "location",
+        "today": "location",
+        "few_days": "location",
+        "recurring": "location"
+      }
+    },
+    "location": {
+      "id": "location",
+      "question": "Where is the pain?",
+      "type": "single",
+      "options": [
+        { "id": "one_side", "label": "On one side of my head" },
+        { "id": "both_sides", "label": "Both sides, or all over" },
+        { "id": "front", "label": "Forehead or behind the eyes" },
+        { "id": "back", "label": "Back of the head or neck" }
+      ],
+      "next": {
+        "one_side": "character",
+        "both_sides": "character",
+        "front": "character",
+        "back": "character"
+      }
+    },
+    "character": {
+      "id": "character",
+      "question": "How does the pain feel?",
+      "type": "single",
+      "options": [
+        { "id": "throbbing", "label": "Throbbing or pulsing" },
+        { "id": "pressure", "label": "Pressure or tightness" },
+        { "id": "sharp", "label": "Sharp or stabbing" },
+        { "id": "dull", "label": "A dull ache" }
+      ],
+      "next": {
+        "throbbing": "sensitivity",
+        "pressure": "neck_tension",
+        "sharp": "sensitivity",
+        "dull": "neck_tension"
+      }
+    },
+    "sensitivity": {
+      "id": "sensitivity",
+      "question": "Does light or sound make it worse?",
+      "type": "single",
+      "options": [
+        { "id": "both", "label": "Both light and sound" },
+        { "id": "light", "label": "Light only" },
+        { "id": "sound", "label": "Sound only" },
+        { "id": "none", "label": "Neither" }
+      ],
+      "next": {
+        "both": "associated",
+        "light": "associated",
+        "sound": "associated",
+        "none": "associated"
+      }
+    },
+    "neck_tension": {
+      "id": "neck_tension",
+      "question": "Is there tightness in your neck or shoulders as well?",
+      "type": "single",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "unsure", "label": "I'm not sure" }
+      ],
+      "next": {
+        "yes": "associated",
+        "no": "associated",
+        "unsure": "associated"
+      }
+    },
+    "associated": {
+      "id": "associated",
+      "question": "Is anything else happening along with it?",
+      "type": "single",
+      "options": [
+        { "id": "nausea", "label": "Nausea" },
+        { "id": "vision", "label": "Changes in my vision" },
+        { "id": "dizziness", "label": "Dizziness" },
+        { "id": "none", "label": "None of these" }
+      ],
+      "next": {
+        "nausea": "severity",
+        "vision": "severity",
+        "dizziness": "severity",
+        "none": "severity"
+      }
+    },
+    "severity": {
+      "id": "severity",
+      "question": "How strong is the pain right now?",
+      "type": "single",
+      "options": [
+        { "id": "mild", "label": "Mild — I notice it but can carry on" },
+        { "id": "moderate", "label": "Moderate — hard to ignore" },
+        { "id": "severe", "label": "Severe — very hard to bear" }
+      ],
+      "next": {
+        "mild": "pattern",
+        "moderate": "pattern",
+        "severe": "pattern"
+      }
+    },
+    "pattern": {
+      "id": "pattern",
+      "question": "Have you had headaches like this before?",
+      "type": "single",
+      "options": [
+        { "id": "first_time", "label": "No, this is the first time" },
+        { "id": "sometimes", "label": "Yes, from time to time" },
+        { "id": "often", "label": "Yes, often or regularly" }
+      ],
+      "next": {
+        "first_time": "meds",
+        "sometimes": "meds",
+        "often": "meds"
+      }
+    },
+    "meds": {
+      "id": "meds",
+      "question": "Have you taken anything for it so far today?",
+      "type": "single",
+      "options": [
+        { "id": "helped", "label": "Yes — it helped" },
+        { "id": "no_help", "label": "Yes — but it didn't help" },
+        { "id": "nothing", "label": "No, nothing yet" }
+      ]
+    }
+  }
+}

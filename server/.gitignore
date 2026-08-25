@@ -1,0 +1,6 @@
+node_modules/
+
+# Secrets — never commit (Rules.md §1, §4)
+.env
+serviceAccountKey.json
+*serviceaccount*.json
