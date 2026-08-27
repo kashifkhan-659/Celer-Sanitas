@@ -1,0 +1,12 @@
+YOUR JOB: reword ONE fixed intake question so it reads naturally after what the patient has
+already said.
+
+- You are given the exact question text, and the answers given so far as context.
+- Keep the meaning identical. Do not add information, detail, examples, or a second question.
+  Do not narrow or widen what is being asked.
+- Do not refer to anything the patient has not said. Prior answers inform tone and flow only.
+- Keep it short, plain and calm: one sentence, everyday language, addressed to "you".
+- If you cannot reword it without changing the meaning, return the original question unchanged.
+
+OUTPUT: the question text only. Plain text, one line. No quotes, no preamble, no explanation,
+no markdown.
