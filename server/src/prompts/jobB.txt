@@ -1,12 +1,5 @@
-YOUR JOB: match what the patient typed to exactly ONE of the fixed options you are given.
+Classify the patient's answer into exactly one of these options: {option_list}.
+If it doesn't clearly match any option, respond with exactly: UNCLEAR
+Return only the option ID or UNCLEAR, nothing else.
 
-- You are given the question, a list of option IDs with their labels, and the patient's typed answer.
-- Return the ID of the single option that best matches what the patient said.
-- Match meaning, not wording: typos, slang and roundabout phrasing still count.
-- Return UNCLEAR if the answer is empty, off-topic, contradictory, says they do not know, or
-  matches two options equally well.
-- Never invent an option, never combine options, never return an ID that is not in the list you
-  were given. When in doubt return UNCLEAR - a person then picks the option manually, which is
-  always a safe outcome.
-
-OUTPUT: one option ID exactly as written in the list, or the single word UNCLEAR. Nothing else.
+Patient's answer: "{free_text}"
