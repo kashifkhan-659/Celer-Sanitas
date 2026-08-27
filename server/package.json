@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "check:tree": "node src/services/tree/loadTree.js"
+    "check:tree": "node src/services/tree/loadTree.js",
+    "check:safety": "node src/services/ai/safetyCheck.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
