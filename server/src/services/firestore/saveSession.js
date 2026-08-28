@@ -47,7 +47,11 @@ async function writeOnce(doc) {
 export async function saveSession({ symptomCategory, answers, bodyMapRegion }) {
   const doc = {
     symptomCategory,
-    bodyMapRegion: bodyMapRegion ?? symptomCategory,
+    // Honest null when the client sends nothing. Substituting the category here would look like a
+    // real body-map selection to the dashboard, which may treat this field as finer-grained than
+    // the category (a region within the chest, not "chest"). A wrong-but-plausible value is worse
+    // than an absent one. BodyMap.jsx fills this in when it starts sending a region.
+    bodyMapRegion: bodyMapRegion ?? null,
     status: 'completed', // -> 'summarized' once Job C clears the safety gate, 'error' if it cannot
     // Stamped server-side so the ordering is trustworthy; a client-supplied timestamp is kept.
     answers: answers.map((a) => ({ ...a, timestamp: a.timestamp ?? new Date().toISOString() })),

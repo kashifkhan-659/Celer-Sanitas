@@ -101,6 +101,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     'This appears to be a benign, self-limiting condition.',
     'Differential includes pulmonary embolism and pneumonia.',
     'Symptoms are worrying and suggestive of an urgent cardiac problem.',
+    // "pattern of" is deliberately NOT a banned term: it is ordinary intake vocabulary (the
+    // headache tree has a `pattern` node, and "any pattern of the pain, constant vs intermittent"
+    // is a legitimate thing to ask a doctor to clarify). This sample proves that leaving it out
+    // opens no gap - a real diagnostic claim wrapped around it is still caught by the terms that
+    // carry the actual clinical meaning. Its clean counterpart sits in MUST_PASS below.
+    'This pattern of chest pain is consistent with unstable angina.',
     '',
     null,
   ];
@@ -115,6 +121,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     'Verify with the patient how long each episode lasts, and whether it has ever woken them at night.',
     'The patient has had this kind of pain before and described it as ongoing, returning over the past few weeks.',
     'Pain is in the upper belly below the ribs, worse after eating, with looser bowel habits.',
+    // The benign half of the pair above: real Job C output, and exactly why "pattern of" stays out.
+    'Clarify the exact onset time and any pattern of the pain (e.g., constant vs intermittent).',
   ];
 
   // Paired allowlist cases. Each benign phrase must PASS while the SAME hedge in front of a

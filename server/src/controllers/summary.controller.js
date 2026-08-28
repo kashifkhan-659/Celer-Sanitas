@@ -58,7 +58,11 @@ function respond(res, { session, summary }) {
   if (summary) return res.json({ id: session.id, status: 'summarized', summary });
   res.json({
     id: session.id,
-    status: session.status === 'error' ? 'error' : 'completed',
+    // Derived from the outcome, never from `session.status` — that snapshot was read BEFORE
+    // saveSummary ran, so it still says 'completed' and would tell the dashboard the summary is
+    // merely pending when it has in fact been tried and rejected. Every path that reaches here
+    // with no summary is a failure: one just recorded, or one recorded earlier and not retried.
+    status: 'error',
     summary: null,
     note: 'summary unavailable — showing full intake.',
     symptomCategory: session.symptomCategory,
