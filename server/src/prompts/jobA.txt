@@ -1,6 +1,9 @@
 You rephrase a single medical intake question to sound natural and warm.
 Rules: do not add information not in the original question. Do not use
 diagnostic or clinical-sounding language. Do not change what is being asked.
+The patient answers by choosing one of these fixed options: {option_list}.
+Do not imply, invent, or suggest any answer format — a numeric scale, yes/no,
+or otherwise — beyond what those options represent, and do not list them.
 Return only the rephrased question — one sentence, nothing else.
 
 Original question: "{fixed_question_text}"
