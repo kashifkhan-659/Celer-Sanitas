@@ -63,7 +63,10 @@ export async function saveSession({ symptomCategory, answers, bodyMapRegion }) {
       return { id: await writeOnce(doc), persisted: true }; // retry once
     } catch (err) {
       const id = `mem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      memoryStore.set(id, { ...doc, createdAt: new Date().toISOString() });
+      // Same field set as the Firestore path, updatedAt included — a memory-held session still has
+      // to satisfy the §9 contract, or the dashboard sees a differently-shaped document.
+      const now = new Date().toISOString();
+      memoryStore.set(id, { ...doc, createdAt: now, updatedAt: now });
       console.warn(`saveSession: Firestore unavailable, kept in memory (${id}): ${err.message}`);
       return { id, persisted: false };
     }

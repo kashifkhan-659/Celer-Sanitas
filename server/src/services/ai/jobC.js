@@ -53,21 +53,27 @@ export async function summarizeSession({ symptomCategory, answers, bodyMapRegion
       console.info(`jobC: tokens prompt=${usage.prompt_tokens} completion=${usage.completion_tokens}${reasoning === undefined ? '' : ` (reasoning=${reasoning})`} total=${usage.total_tokens}`);
     }
 
+    // Named explicitly: an empty body is a known gpt-oss failure mode (reasoning tokens can consume
+    // the whole budget), and "Unexpected end of JSON input" in the log would not say so.
+    if (!raw) throw new Error('empty model response');
+
     const parsed = JSON.parse(raw);
     const text = typeof parsed?.summary === 'string' ? parsed.summary.trim() : '';
     const flaggedItems = (Array.isArray(parsed?.flaggedItems) ? parsed.flaggedItems : [])
       .filter((f) => typeof f === 'string' && f.trim())
-      .map((f) => f.trim())
-      .slice(0, 3); // §9 says 2-3 short strings — keep the contract, don't widen it
+      .map((f) => f.trim());
     if (!text || !flaggedItems.length) throw new Error('summary or flaggedItems missing');
 
+    // Screen EVERYTHING the model produced, before trimming to the contract's 2-3. Trimming first
+    // would let drift in a fourth item be silently discarded instead of blocking — and a model that
+    // drifted in item four has told us not to trust items one to three either. Fail closed.
     for (const candidate of [text, ...flaggedItems]) {
       const { safe, matched } = safetyCheck(candidate);
       // `matched` is a term from safetyCheck's own fixed list, never patient text — safe to log.
       if (!safe) throw new Error(`safetyCheck blocked: ${matched}`);
     }
 
-    return { text, flaggedItems };
+    return { text, flaggedItems: flaggedItems.slice(0, 3) }; // §9: 2-3 short strings
   } catch (err) {
     console.warn(`jobC: no summary, falling back to raw transcript (${err.message})`);
     return null;

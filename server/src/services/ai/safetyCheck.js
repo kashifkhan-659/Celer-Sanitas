@@ -71,7 +71,17 @@ const BANNED_RE = new RegExp(
 // This NARROWS the rule; it does not loosen it. Every entry here is paired in the self-check below
 // with a must-block sample proving the SAME hedge is still caught in its dangerous form. Never add
 // a phrase here without its pair.
-const ALLOWED_RE = /\b(?:might|may|could)\s+be\s+(?:relevant|helpful|useful|worth\s+noting)\b/gi;
+// Each alternative is a SHAPE observed in real Job C output, never a bare term. Both were caught
+// by measuring: 2 of 40 clean summaries were rejected on these two phrasings.
+const ALLOWED_RE = new RegExp([
+  // A hedge before an explicitly benign, non-clinical word. Never before a noun, so
+  // "might be appendicitis" is untouched while "might be related" passes.
+  String.raw`\b(?:might|may|could)\s+be\s+(?:relevant|helpful|useful|related|worth\s+noting)\b`,
+  // "immediately" used TEMPORALLY. The banned sense is urgency - "see a doctor immediately",
+  // "seek help immediately" - where the word ends the clause. Requiring before/after/preceding/
+  // following right behind it cannot match that sense, only "events immediately before the pain".
+  String.raw`\bimmediately\s+(?:before|after|preceding|following)\b`,
+].join('|'), 'gi');
 
 // Screen one piece of AI-generated text. Returns { safe, matched } — `matched` is the banned term
 // from the fixed list above (never patient text), so it is safe to log.
@@ -135,6 +145,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     ['A fuller description of how long each episode lasts could be helpful', 'The chest tightness could be angina'],
     ['Confirming the exact onset time might be useful', 'This might be a migraine'],
     ['The conflicting onset answers may be worth noting', 'Sudden onset may be a subarachnoid haemorrhage'],
+    // Both halves of these two are REAL text: the benign side is verbatim Job C output that the
+    // gate rejected during a 40-call measurement run, the dangerous side is the same phrasing
+    // turned into an actual clinical claim.
+    ['Ask about recent activities, meals, travel, or injuries that might be related', 'The chest pain might be related to a cardiac problem'],
+    ['Clarify the exact time of onset and any events immediately before the pain started', 'The patient should see a doctor immediately'],
+    ['Note anything that happened immediately after the pain began', 'Symptoms are severe and the patient needs to be seen immediately'],
   ];
 
   let failures = 0;

@@ -21,9 +21,19 @@ const inFlight = new Map();
 // summary without spending another Job C call — which matters, because gpt-oss-120b is capped at
 // 200K tokens/day and one summary costs ~1,000 of them.
 export async function ensureSummary(sessionId, { force = false } = {}) {
+  // A forced pass must NEVER join an in-flight unforced one. Joining would silently swallow the
+  // force: the caller asking for a retry would receive the other run's result, and if that run was
+  // the one short-circuiting on status 'error', the retry would return null without ever having
+  // tried again. De-duplication is an optimisation for concurrent readers, not for an explicit
+  // human "try this again".
   const running = inFlight.get(sessionId);
-  if (running) return running;
-  const pass = generateSummary(sessionId, force).finally(() => inFlight.delete(sessionId));
+  if (running && !force) return running;
+
+  const pass = generateSummary(sessionId, force).finally(() => {
+    // Only clear the slot if it is still ours — a forced pass started alongside an unforced one
+    // must not delete the other's entry when it finishes first.
+    if (inFlight.get(sessionId) === pass) inFlight.delete(sessionId);
+  });
   inFlight.set(sessionId, pass);
   return pass;
 }
