@@ -2,8 +2,15 @@ import { Router } from 'express';
 import { loadTree } from '../services/tree/loadTree.js';
 import { saveSession } from '../services/firestore/saveSession.js';
 import { getSession } from '../services/firestore/getSession.js';
+import { getPhrasedQuestion, classifyFreeText } from '../controllers/intake.controller.js';
+import { ensureSummary } from '../controllers/summary.controller.js';
 
 const router = Router();
+
+// --- AI-assisted intake (Jobs A and B). Both delegate to the controller; no AI call is inlined
+// here (handoff §6). The tree and session routes below are unchanged and still AI-free.
+router.get('/intake/:category/:nodeId/question', getPhrasedQuestion);
+router.post('/intake/:category/:nodeId/classify', classifyFreeText);
 
 // GET /api/trees/:category — returns the symptom-tree JSON for the patient client to render.
 // Thin handler (Rules.md §4): validate → call service → respond. loadTree guards the category.
@@ -21,10 +28,18 @@ router.get('/trees/:category', (req, res) => {
 // Writes go through the Admin SDK server-side; the client never writes to Firestore directly.
 router.post('/sessions', async (req, res) => {
   try {
-    const { symptomCategory, answers } = req.body ?? {};
+    const { symptomCategory, answers, bodyMapRegion } = req.body ?? {};
     validateSession(symptomCategory, answers); // throws on bad input
-    const result = await saveSession({ symptomCategory, answers });
+    const result = await saveSession({ symptomCategory, answers, bodyMapRegion });
     res.status(201).json(result); // { id, persisted }
+
+    // Kick off Job C AFTER responding — the patient is finished and must never wait on the
+    // doctor's summary. Deliberately not awaited, so the catch is required: an unhandled rejection
+    // here would take the process down. If it never runs (crash, restart), the dashboard's first
+    // GET /summary generates it instead, so this is an optimisation, not the only path.
+    if (result.persisted) {
+      ensureSummary(result.id).catch((err) => console.warn(`summary: background pass failed (${err.message})`));
+    }
   } catch (err) {
     const bad = /invalid|unknown|category|answers/i.test(err.message);
     res.status(bad ? 400 : 500).json({ error: bad ? 'invalid session' : 'internal error' });
