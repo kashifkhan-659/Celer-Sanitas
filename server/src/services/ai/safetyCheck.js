@@ -62,11 +62,24 @@ const BANNED_RE = new RegExp(
   'i',
 );
 
+// The ONE narrow exception, and the only way a banned term may ever pass. "might be" is banned to
+// catch "might be appendicitis"; Job C also writes "...exposures that might be relevant", which is
+// a procedural intake note carrying no clinical claim, and blocking it costs the doctor an entire
+// summary. So the three hedges pass ONLY when followed by an explicitly benign, non-clinical word —
+// never before a noun, which is exactly where a diagnosis would sit.
+//
+// This NARROWS the rule; it does not loosen it. Every entry here is paired in the self-check below
+// with a must-block sample proving the SAME hedge is still caught in its dangerous form. Never add
+// a phrase here without its pair.
+const ALLOWED_RE = /\b(?:might|may|could)\s+be\s+(?:relevant|helpful|useful|worth\s+noting)\b/gi;
+
 // Screen one piece of AI-generated text. Returns { safe, matched } — `matched` is the banned term
 // from the fixed list above (never patient text), so it is safe to log.
 export function safetyCheck(text) {
   if (typeof text !== 'string' || !text.trim()) return { safe: false, matched: 'empty or non-text output' };
-  const hit = BANNED_RE.exec(text);
+  // Blank the allowed phrases out first, then screen what is left. Replacing with a space keeps the
+  // \b boundaries around neighbouring words intact, so nothing new can hide in the seam.
+  const hit = BANNED_RE.exec(text.replace(ALLOWED_RE, ' '));
   return hit ? { safe: false, matched: hit[0].toLowerCase().replace(/\s+/g, ' ') } : { safe: true, matched: null };
 }
 
@@ -104,6 +117,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     'Pain is in the upper belly below the ribs, worse after eating, with looser bowel habits.',
   ];
 
+  // Paired allowlist cases. Each benign phrase must PASS while the SAME hedge in front of a
+  // condition must still BLOCK. The pairing is what stops the allowlist becoming a loophole:
+  // if a future edit widens ALLOWED_RE far enough to let a diagnosis through, the right-hand
+  // sample fails immediately.
+  const PAIRS = [
+    ['Inquire about any recent activities, foods, or exposures that might be relevant', 'The right-sided pain might be appendicitis'],
+    ['The medication history may be relevant and is worth confirming directly', 'The burning after meals may be reflux'],
+    ['A fuller description of how long each episode lasts could be helpful', 'The chest tightness could be angina'],
+    ['Confirming the exact onset time might be useful', 'This might be a migraine'],
+    ['The conflicting onset answers may be worth noting', 'Sudden onset may be a subarachnoid haemorrhage'],
+  ];
+
   let failures = 0;
   const row = (ok, text, matched) => {
     if (!ok) failures++;
@@ -123,6 +148,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     row(r.safe, t, r.matched);
   }
 
+  console.log('\n--- allowlist pairs (benign must PASS / same hedge before a condition must BLOCK) ---');
+  for (const [benign, dangerous] of PAIRS) {
+    const a = safetyCheck(benign);
+    row(a.safe, benign, a.matched);
+    const b = safetyCheck(dangerous);
+    row(!b.safe, dangerous, b.matched);
+  }
+
   assert.equal(failures, 0, `${failures} safetyCheck case(s) failed`);
-  console.log(`\nsafetyCheck self-check passed — ${MUST_BLOCK.length} blocked, ${MUST_PASS.length} allowed, ${BANNED.length} banned terms.`);
+  console.log(`\nsafetyCheck self-check passed — ${MUST_BLOCK.length} blocked, ${MUST_PASS.length} allowed, ${PAIRS.length} allowlist pairs, ${BANNED.length} banned terms.`);
 }
