@@ -31,15 +31,27 @@ export const memoryStore = new Map();
 async function writeOnce(doc) {
   const ref = await getDb()
     .collection('sessions')
-    .add({ ...doc, createdAt: FieldValue.serverTimestamp() });
+    .add({ ...doc, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
   return ref.id;
 }
 
 // Persist a completed intake transcript to the `sessions` collection.
-// Data model (Architecture.md): { symptomCategory, answers[], createdAt }.
+//
+// Field names follow handoff §9's own rule: where the schema's placeholder name differs from what
+// this write path already uses, the REAL name wins and gets extended rather than duplicated. So
+// `symptomCategory` stays (§9 called it `category`) and `answers` stays (§9 called it `transcript`).
+// Added here to complete the contract: status, bodyMapRegion, updatedAt, and a per-entry timestamp.
+// The dashboard must match these exact names.
+//
 // Retries the write once, then falls back to memory. Returns { id, persisted }.
-export async function saveSession({ symptomCategory, answers }) {
-  const doc = { symptomCategory, answers };
+export async function saveSession({ symptomCategory, answers, bodyMapRegion }) {
+  const doc = {
+    symptomCategory,
+    bodyMapRegion: bodyMapRegion ?? symptomCategory,
+    status: 'completed', // -> 'summarized' once Job C clears the safety gate, 'error' if it cannot
+    // Stamped server-side so the ordering is trustworthy; a client-supplied timestamp is kept.
+    answers: answers.map((a) => ({ ...a, timestamp: a.timestamp ?? new Date().toISOString() })),
+  };
   try {
     return { id: await writeOnce(doc), persisted: true };
   } catch {
@@ -52,4 +64,26 @@ export async function saveSession({ symptomCategory, answers }) {
       return { id, persisted: false };
     }
   }
+}
+
+// Write Job C's result onto an EXISTING session document (handoff §6: a new function, so the
+// proven session-creation path above is untouched). Separate collection is not needed — summary
+// and status are new fields on the document the dashboard already reads.
+//
+// `summary` is null when Job C failed or safetyCheck rejected its output. That is recorded as
+// status 'error' with summary null, so the dashboard can tell "not summarised yet" from "tried and
+// could not" and show the raw transcript instead of waiting forever.
+// ponytail: a failed summary stays failed until someone re-triggers it (POST .../summary); add an
+// automatic retry only if failures turn out to be common rather than one-off.
+export async function saveSummary(id, summary) {
+  const patch = summary
+    ? { summary: { text: summary.text, flaggedItems: summary.flaggedItems }, status: 'summarized' }
+    : { summary: null, status: 'error' };
+
+  if (memoryStore.has(id)) {
+    memoryStore.set(id, { ...memoryStore.get(id), ...patch, updatedAt: new Date().toISOString() });
+    return { persisted: false };
+  }
+  await getDb().collection('sessions').doc(id).update({ ...patch, updatedAt: FieldValue.serverTimestamp() });
+  return { persisted: true };
 }
