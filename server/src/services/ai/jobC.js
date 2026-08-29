@@ -69,8 +69,19 @@ export async function summarizeSession({ symptomCategory, answers, bodyMapRegion
     // drifted in item four has told us not to trust items one to three either. Fail closed.
     for (const candidate of [text, ...flaggedItems]) {
       const { safe, matched } = safetyCheck(candidate);
-      // `matched` is a term from safetyCheck's own fixed list, never patient text — safe to log.
-      if (!safe) throw new Error(`safetyCheck blocked: ${matched}`);
+      if (!safe) {
+        // Evidence line: the REJECTED TEXT, not just the term. A false positive that is only ever
+        // logged as "[possibly]" stays an anecdote - it cannot be judged, and reproducing it by
+        // chance costs dozens of calls. With the sentence in the log, one recurrence is enough to
+        // decide whether the term needs an allowlist pair or the model genuinely drifted.
+        //
+        // This is AI-generated text derived from a transcript, so it is the one place this layer
+        // logs anything close to patient content. Safe here because Rules.md §1 mandates synthetic
+        // demo data only. If this product ever takes real patient data, this line must go behind a
+        // debug flag or be redacted before that happens.
+        console.warn(`jobC: safetyCheck rejected [${matched}] :: ${candidate}`);
+        throw new Error(`safetyCheck blocked: ${matched}`);
+      }
     }
 
     return { text, flaggedItems: flaggedItems.slice(0, 3) }; // §9: 2-3 short strings
