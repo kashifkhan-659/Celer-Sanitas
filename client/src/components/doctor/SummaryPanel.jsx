@@ -1,4 +1,4 @@
- // SummaryPanel — right side of the doctor dashboard (DESIGN.md §4.3, §5B).
+// SummaryPanel — right side of the doctor dashboard (DESIGN.md §4.3, §5B).
 //
 // One session at a time. Three render states based on the session's `status`:
 //   'summarized' → show the AI summary text + amber-flagged items (the happy path)
@@ -133,4 +133,50 @@ function SummarizedBody({ summary }) {
 // Fallback — no summary available. Show the raw Q&A so the doctor still has something useful.
 function FallbackBody({ session }) {
   const noteText =
-    session.status ===
+    session.status === 'error'
+      ? "The summary couldn't be generated for this session. The patient's answers are below."
+      : 'Summary is still being prepared. The patient\'s answers are below.';
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-md bg-neutral-100 px-3 py-2 text-label text-neutral-700">
+        {noteText}
+      </div>
+
+      <section>
+        <h3 className="mb-2 text-eyebrow uppercase text-neutral-500">Answers</h3>
+        <dl className="divide-y divide-neutral-200">
+          {(session.answers ?? []).map((a) => (
+            <div key={a.nodeId} className="grid grid-cols-[1fr,auto] gap-4 py-2.5">
+              <dt className="text-body-sm text-neutral-700">{a.question}</dt>
+              <dd className="text-body-sm font-medium text-neutral-900 text-right">{a.answer}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    </div>
+  );
+}
+
+function EmptyState({ title, body }) {
+  return (
+    <div className="py-16 text-center">
+      <h3 className="text-subtitle text-neutral-700">{title}</h3>
+      <p className="mt-2 text-body-sm text-neutral-500">{body}</p>
+    </div>
+  );
+}
+
+// Turn `chest_pain` -> `Chest pain` for display. Tiny helper.
+function prettyCategory(id) {
+  if (!id) return 'Unknown';
+  return id.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+}
+
+// Turn a Date into something short and scannable. Falls back gracefully on null/undefined.
+function formatDate(d) {
+  if (!(d instanceof Date)) return '';
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
