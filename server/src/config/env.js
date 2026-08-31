@@ -6,13 +6,13 @@ import 'dotenv/config';
 // Nothing here ever logs a value — the failure names the VARIABLE only. The Groq key is
 // server-side only and must never reach the client bundle (Architecture.md §1).
 const REQUIRED = [
-  'GROQ_API_KEY',                   // Groq API — Jobs A/B/C
-  'GOOGLE_APPLICATION_CREDENTIALS', // Firebase Admin service-account key path
+  'GROQ_API_KEY',                  // Groq API — Jobs A/B/C
+  'FIREBASE_SERVICE_ACCOUNT_B64',  // Firebase Admin service-account JSON, base64-encoded
 ];
 
 const missing = REQUIRED.filter((name) => !process.env[name]?.trim());
 if (missing.length) {
-  throw new Error(`Missing required env var(s): ${missing.join(', ')} — set them in server/.env`);
+  throw new Error(`Missing required env var(s): ${missing.join(', ')} — set them in server/.env locally, or in the Vercel project's environment variables`);
 }
 
 export const GROQ_API_KEY = process.env.GROQ_API_KEY.trim();

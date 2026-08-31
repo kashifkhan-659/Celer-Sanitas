@@ -1,9 +1,5 @@
-import { initializeApp, applicationDefault, getApps } from 'firebase-admin/app';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { fileURLToPath } from 'node:url';
-import { dirname, isAbsolute, resolve } from 'node:path';
-
-const SERVER_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 // The Admin SDK owns ALL writes (the client SDK is read-only). Lazy singleton so the server still
 // boots before the service-account key exists — saveSession then degrades to the memory fallback
@@ -11,13 +7,14 @@ const SERVER_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..',
 let _db;
 export function getDb() {
   if (_db) return _db;
+  // getApps() is the modular-SDK equivalent of the namespaced `admin.apps` guard: without it a
+  // warm serverless instance re-entering this function would throw "app already exists".
   if (!getApps().length) {
-    // Credentials come from GOOGLE_APPLICATION_CREDENTIALS (Application Default Credentials).
-    // Normalize a relative path to server/ so it resolves whether the server is started from
-    // server/ or the repo root (google-auth otherwise resolves it against cwd).
-    const cred = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (cred && !isAbsolute(cred)) process.env.GOOGLE_APPLICATION_CREDENTIALS = resolve(SERVER_ROOT, cred);
-    initializeApp({ credential: applicationDefault() });
+    // Serverless has no filesystem to hold a key file, so the whole service-account JSON travels
+    // in one env var. Base64 because the PEM in `private_key` is multi-line and raw newlines do
+    // not survive a single-line environment variable.
+    const json = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, 'base64').toString();
+    initializeApp({ credential: cert(JSON.parse(json)) });
   }
   _db = getFirestore();
   return _db;
@@ -83,9 +80,12 @@ export async function saveSession({ symptomCategory, answers, bodyMapRegion }) {
 // ponytail: a failed summary stays failed until someone re-triggers it (POST .../summary); add an
 // automatic retry only if failures turn out to be common rather than one-off.
 export async function saveSummary(id, summary) {
+  // summaryClaimedAt is cleared here because this write is the END of the run claimSummary opened.
+  // Both outcomes release it: 'summarized' will never be reclaimed anyway, and 'error' must be
+  // reclaimable by an explicit force retry without waiting out the staleness window.
   const patch = summary
-    ? { summary: { text: summary.text, flaggedItems: summary.flaggedItems }, status: 'summarized' }
-    : { summary: null, status: 'error' };
+    ? { summary: { text: summary.text, flaggedItems: summary.flaggedItems }, status: 'summarized', summaryClaimedAt: null }
+    : { summary: null, status: 'error', summaryClaimedAt: null };
 
   if (memoryStore.has(id)) {
     memoryStore.set(id, { ...memoryStore.get(id), ...patch, updatedAt: new Date().toISOString() });
