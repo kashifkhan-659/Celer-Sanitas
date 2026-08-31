@@ -1,28 +1,18 @@
-// SummaryPanel — right side of the doctor dashboard (DESIGN.md §4.3, §5B).
+// SummaryPanel — right column. Title and timestamp on one line, hairline, then sections.
+// SUMMARY label in teal, FLAGGED TO VERIFY label in amber.
 //
-// One session at a time. Three render states based on the session's `status`:
-//   'summarized' → show the AI summary text + amber-flagged items (the happy path)
-//   'completed'  → summary not yet generated; show the raw transcript with a calm note
-//   'error'      → Job C or safety check failed; show the raw transcript with a note
-//
-// A missing summary is NEVER an error surface (Rules.md §3, DESIGN.md §2.4 "no error-red").
-// The tool degrades to showing the doctor the raw answers instead of pretending nothing happened.
-//
-// Uses the double-bezel shell (DESIGN.md §5) — this is one of the surfaces that gets depth.
-// FlaggedItems inside do NOT get double-bezel — density trumps depth for list rows.
+// A missing summary is never an error surface (Rules.md §3). When Job C hasn't run or the
+// safety check rejected its output, the panel degrades to the raw answers instead.
 
 import { useFirestoreSession } from '../../hooks/useFirestoreSession.js';
 import FlaggedItem from './FlaggedItem.jsx';
 
-// `sessionId` is passed in from DoctorDashboard when the doctor picks a session in the list.
-// Null/undefined means "nothing selected yet" — we show a calm empty state instead of crashing.
 export default function SummaryPanel({ sessionId }) {
   const { session, loading, error } = useFirestoreSession(sessionId);
 
-  // Empty state — no session selected. Doctor just landed on the dashboard.
   if (!sessionId) {
     return (
-      <Shell>
+      <Shell centered>
         <EmptyState
           title="Select a session"
           body="Choose a completed intake from the list to see the patient's summary."
@@ -31,11 +21,17 @@ export default function SummaryPanel({ sessionId }) {
     );
   }
 
-  if (loading) return <Shell><EmptyState title="Loading…" body="Fetching the session." /></Shell>;
+  if (loading) {
+    return (
+      <Shell centered>
+        <EmptyState title="Loading…" body="Fetching the session." />
+      </Shell>
+    );
+  }
 
   if (error) {
     return (
-      <Shell>
+      <Shell centered>
         <EmptyState
           title="Couldn't load this session"
           body="Try selecting it again, or pick a different one."
@@ -45,13 +41,25 @@ export default function SummaryPanel({ sessionId }) {
   }
 
   if (!session) {
-    return <Shell><EmptyState title="Session not found" body="It may have been removed." /></Shell>;
+    return (
+      <Shell centered>
+        <EmptyState title="Session not found" body="It may have been removed." />
+      </Shell>
+    );
   }
 
-  // Session loaded. Decide which body to show based on status.
   return (
     <Shell>
-      <Header session={session} />
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="text-[17px] font-semibold text-neutral-900">
+          {prettyCategory(session.symptomCategory)}
+        </h2>
+        <span className="shrink-0 text-[14px] text-neutral-500">
+          {formatDate(session.updatedAt ?? session.createdAt)}
+        </span>
+      </div>
+
+      <hr className="my-6 border-neutral-200/70" />
 
       {session.status === 'summarized' && session.summary ? (
         <SummarizedBody summary={session.summary} />
@@ -62,121 +70,97 @@ export default function SummaryPanel({ sessionId }) {
   );
 }
 
-// -- Sub-components below. Kept in the same file since none are reused elsewhere yet. --
-
-// Double-bezel outer shell (DESIGN.md §5). Same recipe as PatientIntake's Shell but doctor-tuned:
-// tighter padding (p-6 not p-10), no text-center (doctor content is left-aligned for scanning).
-function Shell({ children }) {
+// Card shell. `centered` vertically centres the empty states so they sit mid-card
+// rather than clinging to the top.
+function Shell({ children, centered }) {
   return (
-    <div className="w-full rounded-[1.75rem] bg-neutral-200/70 p-1.5 ring-1 ring-neutral-200">
-      <div
-        className="rounded-[1.375rem] bg-white p-6
-                   shadow-[0_24px_60px_-20px_rgba(20,40,38,0.16),0_8px_24px_-12px_rgba(20,40,38,0.08),inset_0_1px_0_rgba(255,255,255,0.70)]"
-      >
-        {children}
-      </div>
+    <div
+      className={
+        'rounded-2xl bg-white px-8 py-7 shadow-[0_6px_28px_-10px_rgba(20,40,38,0.13),0_2px_8px_-4px_rgba(20,40,38,0.06)] ' +
+        (centered ? 'flex min-h-[420px] items-center justify-center' : '')
+      }
+    >
+      {children}
     </div>
   );
 }
 
-// Top-of-panel meta: which symptom, which body region, when.
-function Header({ session }) {
-  return (
-    <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2 border-b border-neutral-200 pb-4">
-      <div>
-        <div className="text-eyebrow uppercase text-neutral-500">Patient intake</div>
-        <h2 className="mt-1 text-subtitle text-neutral-900">
-          {prettyCategory(session.symptomCategory)}
-          {session.bodyMapRegion && (
-            <span className="text-neutral-500"> · {session.bodyMapRegion}</span>
-          )}
-        </h2>
-      </div>
-      <div className="text-label text-neutral-500">
-        {formatDate(session.updatedAt ?? session.createdAt)}
-      </div>
-    </div>
-  );
-}
-
-// The happy path — Job C ran, safety check passed, we have a summary.
+// Happy path: Job C ran, safety check passed, we have a summary.
 function SummarizedBody({ summary }) {
   return (
-    <div className="space-y-5">
+    <>
       <section>
-        <h3 className="mb-2 text-eyebrow uppercase text-neutral-500">Summary</h3>
-        <p className="text-body-sm text-neutral-800 whitespace-pre-line">{summary.text}</p>
+        <h3 className="text-[15px] font-medium tracking-wide text-teal-700">SUMMARY</h3>
+        <p className="mt-4 text-[15px] leading-[1.75] text-neutral-500">{summary.text}</p>
       </section>
 
       {summary.flaggedItems?.length > 0 && (
-        <section>
-          <h3 className="mb-2 flex items-center gap-2 text-eyebrow uppercase text-neutral-500">
-            Flagged to verify
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700 normal-case tracking-normal">
-              {summary.flaggedItems.length}
-            </span>
-          </h3>
-          {/* role="list" is implicit here — FlaggedItem sets role="listitem". */}
-          <div className="space-y-2">
-            {summary.flaggedItems.map((text, i) => (
-              // `key` uses the index because the array of strings has no stable id. Fine here
-              // because the list is short (2-3 items) and rebuilds fully when the session changes.
-              <FlaggedItem key={i} text={text} />
-            ))}
-          </div>
-        </section>
+        <>
+          <hr className="my-6 border-neutral-200/70" />
+          <section>
+            <h3 className="text-[15px] font-medium tracking-wide text-amber-600">
+              FLAGGED TO VERIFY
+            </h3>
+            <ul role="list" className="mt-4 space-y-1.5">
+              {summary.flaggedItems.map((text, i) => (
+                // Index key is fine here: the list is 2-3 items and rebuilds whenever the
+                // selected session changes, so there's nothing to reorder.
+                <FlaggedItem key={i} text={text} />
+              ))}
+            </ul>
+          </section>
+        </>
       )}
-    </div>
+    </>
   );
 }
 
-// Fallback — no summary available. Show the raw Q&A so the doctor still has something useful.
+// No summary available. Show the raw Q&A so the doctor still has something useful.
 function FallbackBody({ session }) {
   const noteText =
     session.status === 'error'
       ? "The summary couldn't be generated for this session. The patient's answers are below."
-      : 'Summary is still being prepared. The patient\'s answers are below.';
+      : "Summary is still being prepared. The patient's answers are below.";
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-md bg-neutral-100 px-3 py-2 text-label text-neutral-700">
-        {noteText}
-      </div>
-
+    <>
+      <p className="text-[14px] text-neutral-500">{noteText}</p>
+      <hr className="my-6 border-neutral-200/70" />
       <section>
-        <h3 className="mb-2 text-eyebrow uppercase text-neutral-500">Answers</h3>
-        <dl className="divide-y divide-neutral-200">
+        <h3 className="text-[15px] font-medium tracking-wide text-teal-700">ANSWERS</h3>
+        <dl className="mt-4 divide-y divide-neutral-200/70">
           {(session.answers ?? []).map((a) => (
-            <div key={a.nodeId} className="grid grid-cols-[1fr,auto] gap-4 py-2.5">
-              <dt className="text-body-sm text-neutral-700">{a.question}</dt>
-              <dd className="text-body-sm font-medium text-neutral-900 text-right">{a.answer}</dd>
+            <div key={a.nodeId} className="grid grid-cols-[1fr,auto] gap-6 py-3">
+              <dt className="text-[15px] text-neutral-500">{a.question}</dt>
+              <dd className="text-right text-[15px] text-neutral-800">{a.answer}</dd>
             </div>
           ))}
         </dl>
       </section>
-    </div>
+    </>
   );
 }
 
 function EmptyState({ title, body }) {
   return (
-    <div className="py-16 text-center">
-      <h3 className="text-subtitle text-neutral-700">{title}</h3>
-      <p className="mt-2 text-body-sm text-neutral-500">{body}</p>
+    <div className="max-w-sm text-center">
+      <h3 className="text-[17px] text-neutral-800">{title}</h3>
+      <p className="mt-2 text-[14px] leading-relaxed text-neutral-500">{body}</p>
     </div>
   );
 }
 
-// Turn `chest_pain` -> `Chest pain` for display. Tiny helper.
 function prettyCategory(id) {
   if (!id) return 'Unknown';
   return id.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 }
 
-// Turn a Date into something short and scannable. Falls back gracefully on null/undefined.
 function formatDate(d) {
   if (!(d instanceof Date)) return '';
   return d.toLocaleString(undefined, {
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
