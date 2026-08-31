@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { waitUntil } from '@vercel/functions';
 import { loadTree } from '../services/tree/loadTree.js';
 import { saveSession } from '../services/firestore/saveSession.js';
 import { getSession } from '../services/firestore/getSession.js';
@@ -35,10 +36,9 @@ router.post('/sessions', async (req, res) => {
 
     // Kick off Job C AFTER responding — the patient is finished and must never wait on the
     // doctor's summary. Deliberately not awaited, so the catch is required: an unhandled rejection
-    // here would take the process down. If it never runs (crash, restart), the dashboard's first
-    // GET /summary generates it instead, so this is an optimisation, not the only path.
+    // here would take the process down.
     if (result.persisted) {
-      ensureSummary(result.id).catch((err) => console.warn(`summary: background pass failed (${err.message})`));
+      background(ensureSummary(result.id).catch((err) => console.warn(`summary: background pass failed (${err.message})`)));
     }
   } catch (err) {
     const bad = /invalid|unknown|category|answers/i.test(err.message);
@@ -59,6 +59,21 @@ router.get('/sessions/:id', async (req, res) => {
     res.status(unavailable ? 503 : 500).json({ error: unavailable ? 'store unavailable' : 'internal error' });
   }
 });
+
+// Keep post-response work alive. Vercel freezes an invocation the moment the response is sent, so
+// a bare unawaited promise would be suspended mid-Job-C and the summary would never appear —
+// silently, since nothing errors. waitUntil holds the invocation open until it settles.
+//
+// Outside Vercel there is no request context and waitUntil throws. That is fine to swallow: a
+// long-running local process is not torn down after responding, so the plain promise already runs
+// to completion there. Same code path both places, no environment branch in the route itself.
+function background(promise) {
+  try {
+    waitUntil(promise);
+  } catch {
+    // local dev — the promise is already running on its own
+  }
+}
 
 // Trust-boundary validation. loadTree confirms the category exists; the answers transcript is
 // assembled by the client from that same server-served tree (one source of truth). No real PII is
