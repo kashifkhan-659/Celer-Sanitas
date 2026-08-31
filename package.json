@@ -1,0 +1,14 @@
+{
+  "name": "celer-sanitas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Root manifest exists for ONE reason: api/[...path].js is a repo-root file, so Vercel resolves its imports against root node_modules. vercel.json's buildCommand installs client/ separately; these are the server deps the function itself needs at runtime.",
+  "dependencies": {
+    "@vercel/functions": "^1.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.3.0"
+  }
+}

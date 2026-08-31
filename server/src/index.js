@@ -11,9 +11,17 @@ const app = express();
 app.use(cors()); // dev-open. ponytail: restrict to the Vercel origin via env when deploying.
 app.use(express.json());
 
-app.get('/health', (_req, res) => res.json({ ok: true }));
+// Under /api because that is the only prefix routed to the function — a bare /health would be
+// answered by the static client build instead of reaching Express at all.
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api', sessionRoutes);
 app.use('/api', summaryRoutes);
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Celer Sanitas server listening on :${PORT}`));
+export default app;
+
+// Local dev only. Under Vercel the app is imported by api/[...path].js and driven per request, so
+// binding a port there is both pointless and wrong — VERCEL is set in that environment.
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`Celer Sanitas server listening on :${PORT}`));
+}
