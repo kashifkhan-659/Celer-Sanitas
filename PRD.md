@@ -46,6 +46,9 @@ diagnoses, it only clears repetitive intake work off the doctor's plate.
 6. **Tier 3 "adaptive mode" toggle** — fully AI-generated question branching, offered as an alternate mode to the default guided tree.
 7. **Student practice mode** — medical students "interview" the AI acting as a simulated patient; at the end they get feedback on which important questions they asked vs. missed, based on what a real clinician would typically ask.
 
+### Post-launch addition (not part of the original build plan)
+8. **Landing page** — a single entry screen at the app's root route: app title, one-line description of what Celer Sanitas does, the in-product disclaimer (reused verbatim from the existing patient/doctor views: *"Celer Sanitas assists your doctor, it doesn't diagnose. Clinical decisions rest with them."*), and one primary "Start" button into the existing intake flow. Not a marketing page — one screen, one action, no additional sections.
+
 ### Non-Goals (explicitly out of scope)
 - No diagnosis, no treatment recommendations, no likelihood/cause suggestions — anywhere, ever.
 - No storage of real patient data (demo-only/synthetic data).

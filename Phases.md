@@ -88,6 +88,14 @@ buffer + testing land on 2–3 Sept, demo rehearsal on 4 Sept.
 
 ---
 
+## Post-Launch Addition (unscheduled)
+
+### Mon 1 Sept — Landing page
+- `client/src/pages/Landing.jsx`: single entry screen at the root route — title, one-line description, the disclaimer, one primary "Start" button into `PatientIntake`.
+- **Added after the MVP was already built and deployed** (Vercel serverless migration, 31 Aug) — not part of the original 14-day schedule above, and not backdated into it. Partner scope only (`client/`, no `server/` changes), same division of labor as the dashboard.
+
+---
+
 ## Cut-line summary
 1. **Never sacrifice:** guided-mode intake + doctor summary + dashboard + disclaimer + evidence screen (Days 1–7).
 2. **Sacrifice if needed, in this order:** student mode → adaptive mode → extra symptom categories (keep ≥3).

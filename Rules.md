@@ -89,6 +89,7 @@ Fail *closed* toward the deterministic path, never open toward unchecked AI outp
 - **Model IDs centralized** in `config/models.js` (`HAIKU_MODEL`, `SONNET_MODEL`) — never hardcoded per file.
 - **Controllers stay thin:** validate → call service → respond. No business logic or AI calls in routes/controllers.
 - **Frontend:** function components + hooks; styling via Tailwind tokens that trace back to `DESIGN.md`; the amber accent is reserved **only** for flagged/attention items — color carries meaning, so don't reuse amber decoratively.
+- **Partner scope:** the landing page (`client/src/pages/Landing.jsx`) is partner-owned territory, same division of labor as `DoctorDashboard.jsx` — `client/` only, never `server/`.
 - **`DESIGN.md` is generated, not hand-edited.** Change the design brief and regenerate rather than patching the file.
 - **Secrets:** `.env` only, gitignored; no key, token, or Firebase admin credential in the client bundle or in committed code.
 - **Lightweight discipline (in lieu of ECC):** one-paragraph plan per feature before building; manually walk every symptom-tree path before demo; teammate review before merge.
