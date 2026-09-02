@@ -1,18 +1,27 @@
-// Temporary routing switch (per handoff §4: shared decision — awaiting confirmation on
-// react-router-dom vs. this URL-param approach; using this as a safe interim so the dashboard
-// is reachable for local testing).
+// Splash on load, then the routing switch.
 //
-// Reach /             → patient intake (existing behaviour, unchanged)
+// Reach /             → patient intake
 // Reach /?doctor      → doctor dashboard
 //
-// No new dependency added. Trivial to rip out and replace with a real router later.
+// The splash sits on top of whichever page is behind it, so the app is already mounted and
+// listening to Firestore while it shows. By the time it fades, the data has usually arrived.
 
+import { useState } from 'react';
 import PatientIntake from './pages/PatientIntake.jsx';
 import DoctorDashboard from './pages/DoctorDashboard.jsx';
+import Splash from './components/shared/Splash.jsx';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   // window.location.search is the "?..." bit of the URL. .has('doctor') is true if the URL
-  // contains ?doctor (or ?doctor=anything). Simple and honest for a temporary switch.
+  // contains ?doctor (or ?doctor=anything).
   const isDoctor = new URLSearchParams(window.location.search).has('doctor');
-  return isDoctor ? <DoctorDashboard /> : <PatientIntake />;
+
+  return (
+    <>
+      {isDoctor ? <DoctorDashboard /> : <PatientIntake />}
+      {showSplash && <Splash onDone={() => setShowSplash(false)} />}
+    </>
+  );
 }

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { getTree, saveSession } from '../lib/apiClient';
+import Layout from '../components/shared/Layout';
 import BodyMap from '../components/patient/BodyMap';
 import StepDots from '../components/patient/StepDots';
 import Transition from '../components/patient/Transition';
 import QuestionCard from '../components/patient/QuestionCard';
 
-// Day 3: the patient picks where it hurts on the body map → that selects a symptom category → the
+// The patient picks where it hurts on the body map → that selects a symptom category → the
 // guided intake for that category runs, one question at a time. No AI — branching is pure code.
 // On the leaf, the transcript is persisted to Firestore via the server (Admin SDK).
 export default function PatientIntake() {
@@ -40,17 +41,28 @@ export default function PatientIntake() {
   }
 
   // Stage 1 — choose the area on the body map.
+  // Layout carries the persistent Disclaimer, which satisfies Rules.md §1 for this page.
   if (!category) {
     return (
-      <Centered>
-        {/* TODO(Day 7 · Rules.md §1): mount the persistent <Disclaimer/> ("assist, not diagnose") here. */}
+      <Page>
         <BodyMap onSelect={setCategory} />
-      </Centered>
+      </Page>
     );
   }
 
-  if (error) return <Centered><InfoCard title="We couldn't load your intake" body="Please choose an area to try again." onBack={reset} /></Centered>;
-  if (!tree || path.length === 0) return <Centered><LoadingCard /></Centered>;
+  if (error) {
+    return (
+      <Page>
+        <InfoCard
+          title="We couldn't load your intake"
+          body="Please choose an area to try again."
+          onBack={reset}
+        />
+      </Page>
+    );
+  }
+
+  if (!tree || path.length === 0) return <Page><LoadingCard /></Page>;
 
   const currentId = path[path.length - 1];
   const node = tree.nodes[currentId];
@@ -93,11 +105,11 @@ export default function PatientIntake() {
   };
 
   return (
-    <Centered>
+    <Page>
       {done ? (
         <CompleteCard />
       ) : (
-        <>
+        <div className="flex flex-col items-center gap-8">
           <StepDots index={path.length - 1} />
           <Transition motionKey={currentId} direction={dir}>
             <QuestionCard
@@ -110,18 +122,19 @@ export default function PatientIntake() {
               canGoBack={true}
             />
           </Transition>
-        </>
+        </div>
       )}
       {toast && <Toast text={toast} />}
-    </Centered>
+    </Page>
   );
 }
 
-function Centered({ children }) {
+// Wraps every stage in the shared app shell and centres the card in the content area.
+function Page({ children }) {
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-8 bg-neutral-50 px-4 py-10">
-      {children}
-    </main>
+    <Layout label="Patient Intake">
+      <div className="flex flex-col items-center">{children}</div>
+    </Layout>
   );
 }
 
@@ -136,13 +149,11 @@ function Toast({ text }) {
   );
 }
 
-// Shared double-bezel shell for the loading / error / complete cards (DESIGN.md §5).
+// Single white card, matching the doctor side's surfaces.
 function Shell({ children }) {
   return (
-    <div className="w-full max-w-[560px] rounded-[1.75rem] bg-neutral-200/70 p-1.5 ring-1 ring-neutral-200">
-      <div className="rounded-[1.375rem] bg-white p-10 text-center shadow-[0_24px_60px_-20px_rgba(20,40,38,0.16),0_8px_24px_-12px_rgba(20,40,38,0.08),inset_0_1px_0_rgba(255,255,255,0.70)]">
-        {children}
-      </div>
+    <div className="w-full max-w-[560px] rounded-2xl bg-white p-10 text-center shadow-[0_6px_28px_-10px_rgba(20,40,38,0.13),0_2px_8px_-4px_rgba(20,40,38,0.06)]">
+      {children}
     </div>
   );
 }
