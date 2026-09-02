@@ -1,11 +1,14 @@
-// App shell for the doctor dashboard.
-// Header: logo mark + wordmark on the left, "Doctor Dashboard" on the right, hairline beneath.
+// App shell shared by both sides of the app.
+// Header: logo mark + wordmark on the left, a page label on the right, hairline beneath.
 // Disclaimer sits at the bottom of the page (Rules.md §1 requires it visible in the UI).
+//
+// `label` is what shows on the right of the header. Defaults to the doctor view so the
+// dashboard keeps working without passing anything.
 
 import Disclaimer from './Disclaimer.jsx';
 import Mark from './Mark.jsx';
 
-export default function Layout({ children }) {
+export default function Layout({ children, label = 'Doctor Dashboard' }) {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[#EFF1F0] text-neutral-900">
       <header className="border-b border-neutral-200/70">
@@ -16,7 +19,7 @@ export default function Layout({ children }) {
               Celer Sanitas
             </span>
           </div>
-          <span className="text-[19px] text-neutral-800">Doctor Dashboard</span>
+          <span className="text-[19px] text-neutral-800">{label}</span>
         </div>
       </header>
 
