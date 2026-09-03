@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { getTree, saveSession } from '../lib/apiClient';
 import Layout from '../components/shared/Layout';
+import PatientDetails from '../components/patient/PatientDetails';
 import BodyMap from '../components/patient/BodyMap';
 import StepDots from '../components/patient/StepDots';
 import Transition from '../components/patient/Transition';
 import QuestionCard from '../components/patient/QuestionCard';
 
-// The patient picks where it hurts on the body map → that selects a symptom category → the
-// guided intake for that category runs, one question at a time. No AI — branching is pure code.
-// On the leaf, the transcript is persisted to Firestore via the server (Admin SDK).
+// The patient gives their name and age → picks where it hurts on the body map → that selects a
+// symptom category → the guided intake for that category runs, one question at a time. No AI —
+// branching is pure code. On the leaf, the transcript is persisted to Firestore via the server.
 export default function PatientIntake() {
+  const [patient, setPatient] = useState(null); // { patientName, patientAge } — set by step one
   const [category, setCategory] = useState(null); // set by the body map
   const [tree, setTree] = useState(null);
   const [error, setError] = useState(false);
@@ -30,6 +32,8 @@ export default function PatientIntake() {
     return () => { alive = false; };
   }, [category]);
 
+  // Back to the body map. Keeps the patient's name and age — they gave those once for the whole
+  // session and shouldn't have to type them again to change which area they picked.
   function reset() {
     setCategory(null);
     setTree(null);
@@ -40,7 +44,16 @@ export default function PatientIntake() {
     setDir('back');
   }
 
-  // Stage 1 — choose the area on the body map.
+  // Stage 1 — who is this. Required by the server: POST /api/sessions rejects a body without both.
+  if (!patient) {
+    return (
+      <Page>
+        <PatientDetails onSubmit={setPatient} />
+      </Page>
+    );
+  }
+
+  // Stage 2 — choose the area on the body map.
   // Layout carries the persistent Disclaimer, which satisfies Rules.md §1 for this page.
   if (!category) {
     return (
@@ -97,7 +110,12 @@ export default function PatientIntake() {
     });
     setDone(true);
     try {
-      const res = await saveSession({ symptomCategory: tree.category ?? category, answers });
+      // patientName and patientAge are required by the server — a 400 comes back without them.
+      const res = await saveSession({
+        symptomCategory: tree.category ?? category,
+        answers,
+        ...patient,
+      });
       if (!res.persisted) setToast('Saved on this device — we’ll sync when the connection returns.');
     } catch {
       setToast('We couldn’t reach the server, but your answers are safe on this device.');
@@ -185,7 +203,7 @@ function InfoCard({ title, body, onBack }) {
   );
 }
 
-// Phase-1 completion stub. The doctor summary (Job C, Sonnet) is built Day 5 — no AI here yet.
+// Phase-1 completion stub. The doctor summary (Job C) runs server-side after this point.
 function CompleteCard() {
   return (
     <Shell>

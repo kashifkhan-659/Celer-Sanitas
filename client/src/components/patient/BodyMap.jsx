@@ -66,7 +66,7 @@ export default function BodyMap({ onSelect }) {
               alt={key === 'neutral' ? 'Figure of a person' : ''}
               aria-hidden={key !== 'neutral'}
               draggable={false}
-              fetchPriority={key === 'neutral' ? 'high' : 'low'}
+              fetchpriority={key === 'neutral' ? 'high' : 'low'}
               loading={key === 'neutral' ? 'eager' : 'lazy'}
               className={
                 'absolute inset-0 h-full w-full select-none object-contain transition-opacity duration-300 ' +
