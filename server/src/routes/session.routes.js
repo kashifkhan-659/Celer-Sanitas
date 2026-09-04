@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { pathToFileURL } from 'node:url';
 import { waitUntil } from '@vercel/functions';
 import { loadTree } from '../services/tree/loadTree.js';
 import { saveSession } from '../services/firestore/saveSession.js';
@@ -25,13 +26,13 @@ router.get('/trees/:category', (req, res) => {
 });
 
 // POST /api/sessions — persist a completed intake transcript.
-// Body: { symptomCategory, answers: [{ nodeId, question, optionId, answer }] }
+// Body: { patientName, patientAge, symptomCategory, answers: [{ nodeId, question, optionId, answer }] }
 // Writes go through the Admin SDK server-side; the client never writes to Firestore directly.
 router.post('/sessions', async (req, res) => {
   try {
-    const { symptomCategory, answers, bodyMapRegion } = req.body ?? {};
-    validateSession(symptomCategory, answers); // throws on bad input
-    const result = await saveSession({ symptomCategory, answers, bodyMapRegion });
+    const { symptomCategory, answers, bodyMapRegion, patientName, patientAge } = req.body ?? {};
+    validateSession(req.body ?? {}); // throws on bad input
+    const result = await saveSession({ symptomCategory, answers, bodyMapRegion, patientName: patientName.trim(), patientAge });
     res.status(201).json(result); // { id, persisted }
 
     // Kick off Job C AFTER responding — the patient is finished and must never wait on the
@@ -78,8 +79,20 @@ function background(promise) {
 // Trust-boundary validation. loadTree confirms the category exists; the answers transcript is
 // assembled by the client from that same server-served tree (one source of truth). No real PII is
 // collected (Rules.md §1) — this is synthetic Q&A only.
-function validateSession(symptomCategory, answers) {
+//
+// Every message here must contain "invalid" — the catch above maps messages by regex, and one that
+// misses would answer a bad request with 500 instead of 400.
+export function validateSession({ symptomCategory, answers, patientName, patientAge }) {
   loadTree(symptomCategory); // throws on an invalid/unknown category
+
+  // Name and age are collected once, before the tree starts. They identify the transcript for the
+  // doctor and go no further — no job prompt ever receives them.
+  if (typeof patientName !== 'string' || !patientName.trim()) throw new Error('invalid patientName');
+  // Bounded because this string is written straight to Firestore; a name is not a free-text field.
+  if (patientName.trim().length > 100) throw new Error('invalid patientName: too long');
+  // 1-120, per spec's "positive integer". ponytail: excludes infants under 1 — widen the floor to 0
+  // and carry age in months if paediatric intake ever lands.
+  if (!Number.isInteger(patientAge) || patientAge < 1 || patientAge > 120) throw new Error('invalid patientAge');
   if (!Array.isArray(answers) || answers.length === 0) throw new Error('answers must be a non-empty array');
   for (const a of answers) {
     if (!a || typeof a.nodeId !== 'string' || typeof a.optionId !== 'string' || typeof a.answer !== 'string') {
@@ -89,3 +102,40 @@ function validateSession(symptomCategory, answers) {
 }
 
 export default router;
+
+// Self-check: `npm run check:session`. Covers the new required fields and, critically, that every
+// rejection message still matches the catch's bad-input regex — a message that misses it would turn
+// a 400 into a 500, which no amount of reading the validator would reveal.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const { strict: assert } = await import('node:assert');
+  const BAD = /invalid|unknown|category|answers/i; // must stay identical to the catch above
+  const answers = [{ nodeId: 'onset', question: 'When?', optionId: 'sudden', answer: 'Suddenly' }];
+  const valid = { symptomCategory: 'chest_pain', answers, patientName: 'Ada Lovelace', patientAge: 36 };
+
+  const rejects = (label, body) => {
+    const err = (() => { try { validateSession(body); } catch (e) { return e; } })();
+    assert.ok(err, `${label}: expected a rejection`);
+    assert.match(err.message, BAD, `${label}: message "${err.message}" would be served as 500, not 400`);
+  };
+
+  assert.doesNotThrow(() => validateSession(valid), 'a complete payload passes');
+  assert.doesNotThrow(() => validateSession({ ...valid, patientAge: 1 }), 'age 1 is the lower bound');
+  assert.doesNotThrow(() => validateSession({ ...valid, patientAge: 120 }), 'age 120 is the upper bound');
+  assert.doesNotThrow(() => validateSession({ ...valid, patientName: '  Ada  ' }), 'padded name passes');
+
+  rejects('name missing', { ...valid, patientName: undefined });
+  rejects('name empty', { ...valid, patientName: '' });
+  rejects('name whitespace only', { ...valid, patientName: '   ' });
+  rejects('name not a string', { ...valid, patientName: 42 });
+  rejects('name too long', { ...valid, patientName: 'x'.repeat(101) });
+  rejects('age missing', { ...valid, patientAge: undefined });
+  rejects('age 0', { ...valid, patientAge: 0 });
+  rejects('age negative', { ...valid, patientAge: -5 });
+  rejects('age 121', { ...valid, patientAge: 121 });
+  rejects('age fractional', { ...valid, patientAge: 36.5 });
+  rejects('age as a string', { ...valid, patientAge: '36' });
+  rejects('answers empty', { ...valid, answers: [] });
+  rejects('answers entry malformed', { ...valid, answers: [{ nodeId: 'onset' }] });
+
+  console.log('session validation self-check passed — 4 accepted, 13 rejected, all as 400.');
+}

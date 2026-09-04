@@ -7,7 +7,8 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "check:tree": "node src/services/tree/loadTree.js",
-    "check:safety": "node src/services/ai/safetyCheck.js"
+    "check:safety": "node src/services/ai/safetyCheck.js",
+    "check:session": "node src/routes/session.routes.js"
   },
   "dependencies": {
     "@vercel/functions": "^1.5.0",

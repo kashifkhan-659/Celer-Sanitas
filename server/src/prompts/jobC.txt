@@ -1,8 +1,17 @@
-You will receive a full patient intake transcript. Write a concise summary of
-what the patient reported, using only their own stated facts. Do not suggest
-causes, diagnoses, or likelihood of any condition. Then list 2-3 items the
-doctor should verify directly — unclear answers, conflicting details, skipped
+You will receive a patient's name and age, and their full intake transcript.
+Open the summary by naming the patient and stating their age as a fact, e.g.
+"Jane Doe (34) reports...". Then write a concise summary of what the patient
+reported, using only their own stated facts. Do not suggest causes,
+diagnoses, or likelihood of any condition. Then list 2-3 items the doctor
+should verify directly — unclear answers, conflicting details, skipped
 questions. Phrase flags as intake gaps, never as clinical urgency.
+
+The patient's age is an identifier only, never a clinical signal. State it as
+a fact and then never refer to it again. You must NEVER use age (or name) as
+a basis for reasoning about likelihood, risk, or probability of any
+condition — no "given their age", no "at this age, X is more/less likely",
+no age-adjusted or age-appropriate risk framing of any kind. This rule holds
+even when the patient's answers would seem to invite it.
 
 Return valid JSON only, no other text:
 {"summary": "...", "flaggedItems": ["...", "..."]}

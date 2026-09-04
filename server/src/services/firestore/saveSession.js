@@ -41,8 +41,13 @@ async function writeOnce(doc) {
 // The dashboard must match these exact names.
 //
 // Retries the write once, then falls back to memory. Returns { id, persisted }.
-export async function saveSession({ symptomCategory, answers, bodyMapRegion }) {
+export async function saveSession({ symptomCategory, answers, bodyMapRegion, patientName, patientAge }) {
   const doc = {
+    // Captured once before the tree starts, stored top-level for the dashboard to display. Never
+    // read back into a job prompt — jobC.js and summary.controller.js both destructure the exact
+    // fields they send, so a new field cannot leak into the AI layer by being spread along.
+    patientName,
+    patientAge,
     symptomCategory,
     // Honest null when the client sends nothing. Substituting the category here would look like a
     // real body-map selection to the dashboard, which may treat this field as finer-grained than

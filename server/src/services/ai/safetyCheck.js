@@ -53,12 +53,27 @@ const CONDITIONS = [
   'urinary tract infection', 'uti', 'constipation',
 ];
 
-const BANNED = [...DIAGNOSTIC_LANGUAGE, ...CONDITIONS];
+// Age-based clinical reasoning (this change: Job C now receives patientName/patientAge as
+// identifiers). A bare age mention ("34-year-old patient", "Jane Doe (34)") must stay legal — these
+// are the CONSTRUCTIONS that use age as a reason, not the fact of stating it. No allowlist pairing
+// needed here (unlike the hedges below): none of these phrases has a benign, non-reasoning sense.
+const AGE_REASONING = [
+  'given their age', 'given her age', 'given his age',
+  'at this age', 'at her age', 'at his age', 'at their age',
+  'for someone this age', 'for someone her age', 'for someone his age', 'for someone their age',
+  'for a patient this age', 'for a patient her age', 'for a patient his age',
+  'due to their age', 'due to her age', 'due to his age', 'because of their age',
+  'age appropriate risk', 'age related risk', 'age adjusted risk',
+];
 
-// \s+ between words so a line break inside a phrase still matches; \b so "tension" alone is fine
-// while "tension headache" is not, and "gas" never matches inside "gastritis".
+const BANNED = [...DIAGNOSTIC_LANGUAGE, ...CONDITIONS, ...AGE_REASONING];
+
+// [\s-]+ between words so a line break OR a hyphen inside a phrase still matches (real model output
+// hyphenates "age-appropriate risk"; the term list itself stays plain words for the self-check's
+// [a-z ]+ assertion below); \b so "tension" alone is fine while "tension headache" is not, and "gas"
+// never matches inside "gastritis".
 const BANNED_RE = new RegExp(
-  '\\b(?:' + BANNED.map((t) => t.split(' ').join('\\s+')).join('|') + ')\\b',
+  '\\b(?:' + BANNED.map((t) => t.split(' ').join('[\\s-]+')).join('|') + ')\\b',
   'i',
 );
 
@@ -117,6 +132,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     // opens no gap - a real diagnostic claim wrapped around it is still caught by the terms that
     // carry the actual clinical meaning. Its clean counterpart sits in MUST_PASS below.
     'This pattern of chest pain is consistent with unstable angina.',
+    // Age-based reasoning (this change): age is an identifier in Job C's summary, never a signal.
+    'Given their age, this presentation is more likely to be cardiac in origin.',
+    'At this age, chest pain of this kind carries a higher baseline risk.',
+    'For someone this age, the described pain pattern is more consistent with angina.',
+    'The age-appropriate risk here is elevated given the reported symptoms.',
     '',
     null,
   ];
@@ -133,6 +153,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     'Pain is in the upper belly below the ribs, worse after eating, with looser bowel habits.',
     // The benign half of the pair above: real Job C output, and exactly why "pattern of" stays out.
     'Clarify the exact onset time and any pattern of the pain (e.g., constant vs intermittent).',
+    // Age stated as a bare fact (this change) must stay legal — only reasoning WITH age is banned.
+    'Jane Doe (34) reports chest pain starting two hours ago.',
+    'John Smith, a 67-year-old patient, described sudden onset chest pain radiating to the left arm.',
+    'The patient is 58 years old and reported the pain as pressure-like, moderate in strength.',
   ];
 
   // Paired allowlist cases. Each benign phrase must PASS while the SAME hedge in front of a
