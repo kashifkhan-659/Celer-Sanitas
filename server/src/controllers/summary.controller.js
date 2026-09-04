@@ -43,6 +43,8 @@ export async function ensureSummary(sessionId, { force = false } = {}) {
 // Only ever reached by the caller that won the claim, so exactly one Job C call runs per session.
 async function runSummary(session) {
   const summary = await summarizeSession({
+    patientName: session.patientName,
+    patientAge: session.patientAge,
     symptomCategory: session.symptomCategory,
     answers: session.answers,
     bodyMapRegion: session.bodyMapRegion,
